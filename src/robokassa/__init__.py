@@ -17,6 +17,12 @@ from robokassa.holding import (
     hold_confirm,
     hold_init,
 )
+from robokassa.recurring import (
+    RECURRING_URL,
+    RecurringChargeResult,
+    init_recurring_parent,
+    recurring_charge,
+)
 from robokassa.refund import (
     DEFAULT_REFUND_BASE_URL,
     JwtAlgorithm,
@@ -71,6 +77,7 @@ __all__ = [
     "DEFAULT_REFUND_BASE_URL",
     "HOLD_CANCEL_URL",
     "HOLD_CONFIRM_URL",
+    "RECURRING_URL",
     "CalcOutSumResult",
     "CheckoutInvoice",
     "CheckoutReceipt",
@@ -86,6 +93,7 @@ __all__ = [
     "OperationStateCode",
     "PaymentMethod",
     "PaymentObject",
+    "RecurringChargeResult",
     "RefundCreateResult",
     "RefundInvoiceItem",
     "RefundNotFoundError",
@@ -110,6 +118,7 @@ __all__ = [
     "hold_cancel",
     "hold_confirm",
     "hold_init",
+    "init_recurring_parent",
     "list_currencies",
     "op_state_signature",
     "parse_calc_out_sum_response",
@@ -117,6 +126,7 @@ __all__ = [
     "parse_op_state_response",
     "parse_refund_create_response",
     "parse_refund_status_response",
+    "recurring_charge",
     "refund_create",
     "refund_status",
     "verify_result_signature",
