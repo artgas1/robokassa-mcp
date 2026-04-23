@@ -150,7 +150,7 @@ Mapped against the 8 public Robokassa API groups:
 | Holding / Pre-auth | ✅ init / confirm / cancel | `robokassa.holding` |
 | Recurring | ✅ parent + child | `robokassa.recurring` |
 | Fiscal 54-ФЗ | ✅ second receipt create / status | `robokassa.fiscal` |
-| Partner API | 🟡 `partner_refund` (full surface = separate work) | `robokassa.partner` |
+| Partner API | 🟡 `partner_refund` only — [see coverage notes](./docs/partner-api.md) | `robokassa.partner` |
 | Auxiliary | ✅ `send_sms`, webhook signatures, split payments | `robokassa.sms`, `robokassa.webhooks`, `robokassa.split` |
 
 ## Environment variables
