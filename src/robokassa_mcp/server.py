@@ -13,6 +13,15 @@ from robokassa import refund_create as _refund_create
 from robokassa import refund_status as _refund_status
 from robokassa.refund import JwtAlgorithm, RefundInvoiceItem
 from robokassa.signatures import SignatureAlgorithm
+from robokassa.webhooks import (
+    build_ok_response as _build_ok_response,
+)
+from robokassa.webhooks import (
+    verify_result_signature as _verify_result_signature,
+)
+from robokassa.webhooks import (
+    verify_success_signature as _verify_success_signature,
+)
 
 mcp: FastMCP = FastMCP("robokassa")
 
@@ -193,6 +202,65 @@ async def refund_status(request_id: str) -> dict[str, Any]:
         "is_finished": result.is_finished,
         "is_terminal": result.is_terminal,
     }
+
+
+@mcp.tool()
+def verify_result_signature(
+    params: dict[str, Any],
+    password2: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Verify the SignatureValue on a Robokassa ResultURL request.
+
+    Robokassa POSTs payment notifications to the merchant's ResultURL after a
+    successful checkout. The merchant must verify the signature to confirm the
+    notification is authentic, then respond with the string returned by
+    `build_ok_response(inv_id)` — otherwise Robokassa retries.
+
+    Args:
+        params: Form-encoded body from the ResultURL request. Must contain
+            OutSum, InvId, SignatureValue. Any `Shp_*` parameters included in
+            the body are automatically incorporated into signature verification.
+        password2: Shop's Password#2. Falls back to ROBOKASSA_PASSWORD2 env var.
+        algorithm: Signature algorithm configured in the cabinet.
+
+    Returns:
+        `{valid: bool, expected_ok_response: str}` — if `valid=True`, write
+        `expected_ok_response` verbatim to the HTTP body.
+    """
+    pw2 = _resolve_credential(password2, "ROBOKASSA_PASSWORD2")
+    valid = _verify_result_signature(params, pw2, algorithm=algorithm)
+    inv_id = params.get("InvId") or params.get("invid") or params.get("invID") or ""
+    return {
+        "valid": valid,
+        "expected_ok_response": _build_ok_response(inv_id) if valid else None,
+    }
+
+
+@mcp.tool()
+def verify_success_signature(
+    params: dict[str, Any],
+    password1: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Verify the SignatureValue on a Robokassa SuccessURL redirect.
+
+    SuccessURL is the browser-side redirect after payment completes. Unlike
+    ResultURL it does NOT mean the payment is credited — only that the user
+    returned to the success page. Still, verifying the signature guards against
+    CSRF / tampering.
+
+    Args:
+        params: Query-string params from the SuccessURL GET request.
+        password1: Shop's Password#1. Falls back to ROBOKASSA_PASSWORD1 env var.
+        algorithm: Signature algorithm configured in the cabinet.
+
+    Returns:
+        `{valid: bool}`.
+    """
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    valid = _verify_success_signature(params, pw1, algorithm=algorithm)
+    return {"valid": valid}
 
 
 def main() -> None:
