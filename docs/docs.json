@@ -1,0 +1,53 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "robokassa-mcp",
+  "description": "Comprehensive Python client and MCP server for Robokassa — the Russian payment gateway.",
+  "colors": {
+    "primary": "#0068FF",
+    "light": "#3C8DFF",
+    "dark": "#0050C8"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "installation",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "tools",
+          "security"
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/artgas1/robokassa-mcp"
+      },
+      {
+        "label": "PyPI",
+        "href": "https://pypi.org/project/robokassa-mcp/"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Install",
+      "href": "/installation"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/artgas1/robokassa-mcp"
+    }
+  }
+}
