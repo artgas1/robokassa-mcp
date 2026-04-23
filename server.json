@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
   "name": "io.github.artgas1/robokassa-mcp",
-  "description": "Comprehensive MCP server for Robokassa payment gateway — checkout, XML status, refunds, holding, recurring, 54-FZ fiscal receipts, partner API, and auxiliary endpoints.",
+  "description": "Comprehensive MCP server for the Robokassa payment gateway (18 tools, full API coverage).",
   "version": "0.1.0",
   "repository": {
     "url": "https://github.com/artgas1/robokassa-mcp",
