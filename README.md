@@ -1,5 +1,7 @@
 # robokassa-mcp
 
+[![CI](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml)
+
 Comprehensive Python client and [Model Context Protocol](https://modelcontextprotocol.io) server for [Robokassa](https://robokassa.com) — the Russian payment gateway.
 
 Covers the full API surface: checkout, XML status interfaces, refunds, holding (pre-auth), recurring subscriptions, 54-ФЗ fiscal receipts, Partner API, and auxiliary endpoints.
@@ -115,6 +117,8 @@ claude mcp add robokassa \
 
 ## MCP tools exposed to agents
 
+All 18 tools are wrapped as `@mcp.tool()` and available to any MCP-capable agent (Claude Desktop, Claude Code, Cursor, Windsurf, etc.).
+
 | Tool | Purpose | Auth |
 |---|---|---|
 | `create_invoice` | Build a signed checkout URL (optional 54-ФЗ receipt). | Password#1 |
@@ -125,16 +129,14 @@ claude mcp add robokassa \
 | `refund_status` | Poll refund progress by requestId. | — |
 | `verify_result_signature` | Validate a ResultURL webhook. | Password#2 |
 | `verify_success_signature` | Validate a SuccessURL redirect. | Password#1 |
+| `hold_init` / `hold_confirm` / `hold_cancel` | Two-step card pre-authorization. | Password#1 |
+| `init_recurring_parent` / `recurring_charge` | Subscription auto-charges. | Password#1 |
+| `build_split_invoice` | Marketplace multi-recipient checkout. | — |
+| `send_sms` | Paid SMS service. | Password#1 |
+| `second_receipt_create` / `second_receipt_status` | 54-ФЗ final receipt after advance. | Password#1 |
+| `partner_refund` | Alternative refund path for partner integrators. | Partner JWT |
 
-Additional Python-only helpers (not yet wrapped as MCP tools, but importable from `robokassa`):
-
-- **Holding:** `hold_init`, `hold_confirm`, `hold_cancel` — two-step pre-auth flow.
-- **Recurring:** `init_recurring_parent`, `recurring_charge` — subscription auto-charges.
-- **Fiscal 54-ФЗ:** `second_receipt_create`, `second_receipt_status` — final receipt after advance/prepayment.
-- **Partner API:** `partner_refund` — alternative refund path for partner integrators.
-- **Split:** `build_split_invoice` — marketplace multi-recipient checkout.
-- **SMS:** `send_sms` — Robokassa SMS service.
-- **Signature helpers:** `compute_signature`, `op_state_signature`, `build_checkout_signature`, `build_refund_jwt`, `build_sms_signature`, `compute_result_signature`, `compute_success_signature`, `encode_fiscal_body`.
+Low-level signature helpers are available from Python only: `compute_signature`, `op_state_signature`, `build_checkout_signature`, `build_refund_jwt`, `build_sms_signature`, `compute_result_signature`, `compute_success_signature`, `encode_fiscal_body`.
 
 ## API coverage
 

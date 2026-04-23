@@ -15,8 +15,19 @@ from robokassa import list_currencies as _list_currencies
 from robokassa import refund_create as _refund_create
 from robokassa import refund_status as _refund_status
 from robokassa.checkout import CheckoutReceipt, CheckoutReceiptItem
+from robokassa.fiscal import second_receipt_create as _second_receipt_create
+from robokassa.fiscal import second_receipt_status as _second_receipt_status
+from robokassa.holding import hold_cancel as _hold_cancel
+from robokassa.holding import hold_confirm as _hold_confirm
+from robokassa.holding import hold_init as _hold_init
+from robokassa.partner import partner_refund as _partner_refund
+from robokassa.recurring import init_recurring_parent as _init_recurring_parent
+from robokassa.recurring import recurring_charge as _recurring_charge
 from robokassa.refund import JwtAlgorithm, PaymentMethod, PaymentObject, RefundInvoiceItem, TaxType
 from robokassa.signatures import SignatureAlgorithm
+from robokassa.sms import send_sms as _send_sms
+from robokassa.split import SplitRecipient
+from robokassa.split import build_split_invoice as _build_split_invoice
 from robokassa.webhooks import (
     build_ok_response as _build_ok_response,
 )
@@ -442,6 +453,333 @@ async def calc_out_sum(
     return {
         "result_code": int(result.result_code),
         "out_sum": str(result.out_sum) if result.out_sum is not None else None,
+    }
+
+
+@mcp.tool()
+def hold_init(
+    out_sum: float,
+    inv_id: int,
+    description: str | None = None,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    receipt_items: list[dict[str, Any]] | None = None,
+    receipt_sno: str | None = None,
+    email: str | None = None,
+    culture: str = "ru",
+    is_test: bool = False,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Build a checkout URL with StepByStep=true for two-step pre-auth.
+
+    Funds are reserved on the card; use `hold_confirm` to capture or
+    `hold_cancel` to release. Max hold window: 7 days.
+
+    Notification for successful hold is delivered to ResultURL2 (not the
+    standard ResultURL). Requires prior agreement with Robokassa and only
+    works with card payments.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    receipt = _build_checkout_receipt(receipt_items, receipt_sno)
+    invoice = _hold_init(
+        merchant_login=login,
+        out_sum=Decimal(str(out_sum)),
+        inv_id=inv_id,
+        password1=pw1,
+        description=description,
+        receipt=receipt,
+        email=email,
+        culture=culture,
+        is_test=is_test,
+        algorithm=algorithm,
+    )
+    return {
+        "url": invoice.url,
+        "form_action": invoice.form_action,
+        "form_fields": invoice.form_fields,
+        "signature": invoice.signature,
+    }
+
+
+@mcp.tool()
+async def hold_confirm(
+    out_sum: float,
+    inv_id: int,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    receipt_items: list[dict[str, Any]] | None = None,
+    receipt_sno: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Capture previously-reserved funds for a held transaction.
+
+    Cart can be reduced (smaller `receipt_items`) before capture, but not
+    increased. Pass the same OutSum (possibly smaller) as the original hold.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    receipt = _build_checkout_receipt(receipt_items, receipt_sno)
+    result = await _hold_confirm(
+        merchant_login=login,
+        out_sum=Decimal(str(out_sum)),
+        inv_id=inv_id,
+        password1=pw1,
+        receipt=receipt,
+        algorithm=algorithm,
+    )
+    return {"status_code": result.status_code, "body": result.body}
+
+
+@mcp.tool()
+async def hold_cancel(
+    inv_id: int,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Release a hold without capturing the reserved funds."""
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    result = await _hold_cancel(
+        merchant_login=login,
+        inv_id=inv_id,
+        password1=pw1,
+        algorithm=algorithm,
+    )
+    return {"status_code": result.status_code, "body": result.body}
+
+
+@mcp.tool()
+def init_recurring_parent(
+    out_sum: float,
+    inv_id: int,
+    description: str | None = None,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    receipt_items: list[dict[str, Any]] | None = None,
+    receipt_sno: str | None = None,
+    email: str | None = None,
+    culture: str = "ru",
+    is_test: bool = False,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Build a checkout URL marking the payment as a recurring parent.
+
+    After the user pays, the shop can silently charge subsequent amounts
+    via `recurring_charge` citing this invoice's `inv_id`.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    receipt = _build_checkout_receipt(receipt_items, receipt_sno)
+    invoice = _init_recurring_parent(
+        merchant_login=login,
+        out_sum=Decimal(str(out_sum)),
+        inv_id=inv_id,
+        password1=pw1,
+        description=description,
+        receipt=receipt,
+        email=email,
+        culture=culture,
+        is_test=is_test,
+        algorithm=algorithm,
+    )
+    return {
+        "url": invoice.url,
+        "form_action": invoice.form_action,
+        "form_fields": invoice.form_fields,
+        "signature": invoice.signature,
+    }
+
+
+@mcp.tool()
+async def recurring_charge(
+    new_inv_id: int,
+    previous_inv_id: int,
+    out_sum: float,
+    description: str | None = None,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    receipt_items: list[dict[str, Any]] | None = None,
+    receipt_sno: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Silently charge a recurring subscription payment.
+
+    `previous_inv_id` must be the inv_id of an already-paid parent (created
+    with `init_recurring_parent`). Response `"OK<InvId>"` means accepted,
+    NOT captured — verify via `check_payment`.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    receipt = _build_checkout_receipt(receipt_items, receipt_sno)
+    result = await _recurring_charge(
+        merchant_login=login,
+        new_inv_id=new_inv_id,
+        previous_inv_id=previous_inv_id,
+        out_sum=Decimal(str(out_sum)),
+        password1=pw1,
+        description=description,
+        receipt=receipt,
+        algorithm=algorithm,
+    )
+    return {
+        "status_code": result.status_code,
+        "body": result.body,
+        "is_accepted": result.is_accepted,
+    }
+
+
+@mcp.tool()
+def build_split_invoice(
+    out_amount: float,
+    splits: list[dict[str, Any]],
+    email: str | None = None,
+    inc_curr: str | None = None,
+    inv_id: int | None = None,
+    description: str | None = None,
+) -> dict[str, Any]:
+    """Build a URL for a multi-recipient (marketplace-style) split payment.
+
+    Each split: `{merchantLogin, amount, description?}`. Sum of amounts
+    must equal out_amount.
+    """
+    parsed = [
+        SplitRecipient(
+            merchant_login=str(s["merchantLogin"]),
+            amount=Decimal(str(s["amount"])),
+            description=s.get("description"),
+        )
+        for s in splits
+    ]
+    invoice = _build_split_invoice(
+        out_amount=Decimal(str(out_amount)),
+        splits=parsed,
+        email=email,
+        inc_curr=inc_curr,
+        inv_id=inv_id,
+        description=description,
+    )
+    return {"url": invoice.url, "invoice_json": invoice.invoice_json}
+
+
+@mcp.tool()
+async def send_sms(
+    phone: str,
+    message: str,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Send an SMS via Robokassa's SMS service.
+
+    Paid feature — requires a non-zero SMS balance in the cabinet.
+    Phone must be in international format (e.g. `79991234567`).
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    result = await _send_sms(login, phone, message, pw1, algorithm=algorithm)
+    return {"status_code": result.status_code, "body": result.body}
+
+
+@mcp.tool()
+async def second_receipt_create(
+    merchant_id: str,
+    receipt_id: str,
+    origin_id: str,
+    items: list[dict[str, Any]],
+    total: float,
+    payments: list[dict[str, Any]],
+    client: dict[str, str],
+    url: str,
+    password1: str | None = None,
+    sno: str | None = None,
+    vats: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Emit a final (second) 54-ФЗ fiscal receipt after an advance/prepayment sale.
+
+    For merchants using Robokassa Fiscal. `merchant_id` is the Fiscal
+    merchantId (e.g. `robokassa_sell`); `origin_id` is the InvId of the
+    original operation. Max 2 receipts per operation.
+
+    items: `[{name, quantity, sum, tax, payment_method, payment_object}]`.
+    payments: typically `[{type: 2, sum: <total>}]` for offsetting a prepayment.
+    client: `{email}` or `{phone}`.
+    """
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    result = await _second_receipt_create(
+        merchant_id=merchant_id,
+        receipt_id=receipt_id,
+        origin_id=origin_id,
+        items=items,
+        total=total,
+        client=client,
+        payments=payments,
+        password1=pw1,
+        sno=sno,
+        url=url,
+        vats=vats,
+    )
+    return {
+        "result_code": result.result_code,
+        "result_description": result.result_description,
+    }
+
+
+@mcp.tool()
+async def second_receipt_status(
+    merchant_id: str,
+    receipt_id: str,
+    password1: str | None = None,
+) -> dict[str, Any]:
+    """Check registration status of a 54-ФЗ fiscal receipt.
+
+    Use `merchant_id="robokassa_state"` for status lookups.
+    """
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    result = await _second_receipt_status(
+        merchant_id=merchant_id,
+        receipt_id=receipt_id,
+        password1=pw1,
+    )
+    return {
+        "code": result.code,
+        "description": result.description,
+        "fn_number": result.fn_number,
+        "fiscal_document_number": result.fiscal_document_number,
+        "fiscal_document_attribute": result.fiscal_document_attribute,
+        "fiscal_date": result.fiscal_date,
+        "fiscal_type": result.fiscal_type,
+    }
+
+
+@mcp.tool()
+async def partner_refund(
+    robox_partner_id: str,
+    op_key: str,
+    auth_headers: dict[str, str],
+    refund_sum: float | None = None,
+    receipt: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Alternative refund path via Partner API (for CPA / SaaS integrators).
+
+    Merchant-only users should prefer `refund_create` instead (uses Password#3).
+    Partner API requires `RoboxPartnerId` and partner-specific auth headers —
+    typically `{"Authorization": "Bearer <partner-jwt>"}`.
+    """
+    amount = Decimal(str(refund_sum)) if refund_sum is not None else None
+    result = await _partner_refund(
+        robox_partner_id=robox_partner_id,
+        op_key=op_key,
+        auth_headers=auth_headers,
+        refund_sum=amount,
+        receipt=receipt,
+        raise_on_api_error=False,
+    )
+    return {
+        "success": result.success,
+        "error": result.error,
+        "result_code": result.result_code,
     }
 
 
