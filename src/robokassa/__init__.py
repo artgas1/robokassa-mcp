@@ -17,6 +17,12 @@ from robokassa.holding import (
     hold_confirm,
     hold_init,
 )
+from robokassa.partner import (
+    PARTNER_API_BASE_URL,
+    PartnerRefundResult,
+    parse_partner_refund_response,
+    partner_refund,
+)
 from robokassa.recurring import (
     RECURRING_URL,
     RecurringChargeResult,
@@ -85,6 +91,7 @@ __all__ = [
     "DEFAULT_SPLIT_URL",
     "HOLD_CANCEL_URL",
     "HOLD_CONFIRM_URL",
+    "PARTNER_API_BASE_URL",
     "RECURRING_URL",
     "SMS_URL",
     "CalcOutSumResult",
@@ -100,6 +107,7 @@ __all__ = [
     "OperationInfo",
     "OperationState",
     "OperationStateCode",
+    "PartnerRefundResult",
     "PaymentMethod",
     "PaymentObject",
     "RecurringChargeResult",
@@ -138,8 +146,10 @@ __all__ = [
     "parse_calc_out_sum_response",
     "parse_currencies_response",
     "parse_op_state_response",
+    "parse_partner_refund_response",
     "parse_refund_create_response",
     "parse_refund_status_response",
+    "partner_refund",
     "recurring_charge",
     "refund_create",
     "refund_status",
