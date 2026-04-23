@@ -1,0 +1,44 @@
+---
+title: Introduction
+description: "Comprehensive MCP server for the Robokassa payment gateway"
+---
+
+# robokassa-mcp
+
+A comprehensive Python [Model Context Protocol](https://modelcontextprotocol.io)
+server exposing the full [Robokassa](https://robokassa.com) payment gateway
+to AI agents.
+
+## What it does
+
+- **18 MCP tools** covering all 8 public API groups: checkout, XML status,
+  refunds, holding, recurring, 54-ФЗ fiscal receipts, partner API, auxiliary.
+- **Works anywhere MCP does:** Claude Desktop, Claude Code, Cursor,
+  VS Code Copilot, Windsurf, Continue.dev, custom LangGraph agents.
+- **Pure Python library too:** import `robokassa` directly for non-MCP use
+  (server handlers, CLI scripts, etc.).
+
+## When to use this
+
+- You're building an AI assistant that takes payment-related actions for a
+  shop using Robokassa.
+- You run support workflows (check payment status, process refunds, poll
+  recurring charges) and want an agent to do the boring parts.
+- You're integrating Robokassa into a larger LangGraph / AutoGen / Semantic
+  Kernel agent that needs reliable, typed tools.
+
+## When NOT to use this
+
+- You need a different payment gateway. This server targets Robokassa
+  specifically (Russia / EAEU market).
+- You want a zero-trust setup for the agent. Even with human confirmation
+  gates, any server that *can* move money is a security surface — read
+  [Security](/reference/security) before connecting one to a real shop.
+
+## Status
+
+Beta — 109 tests, CI on Python 3.11 / 3.12 / 3.13, MIT license. Maintained
+drop-and-forget style; PRs welcome but not guaranteed to be reviewed
+promptly.
+
+Next: [Installation →](/installation)

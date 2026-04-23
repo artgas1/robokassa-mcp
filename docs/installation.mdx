@@ -1,0 +1,133 @@
+---
+title: Installation
+description: "Install robokassa-mcp in your MCP client or as a Python library"
+---
+
+## As an MCP server
+
+<CodeGroup>
+
+```json Claude Desktop (claude_desktop_config.json)
+{
+  "mcpServers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+```bash Claude Code
+claude mcp add robokassa \
+  -e ROBOKASSA_LOGIN=my-shop \
+  -e ROBOKASSA_PASSWORD1=... \
+  -e ROBOKASSA_PASSWORD2=... \
+  -e ROBOKASSA_PASSWORD3=... \
+  -- uvx robokassa-mcp
+```
+
+```json Cursor (~/.cursor/mcp.json)
+{
+  "mcpServers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+```json VS Code (settings.json)
+{
+  "github.copilot.chat.mcp.servers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+```json Windsurf (mcp_config.json)
+{
+  "mcpServers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+</CodeGroup>
+
+<Note>
+`uvx` is from the [uv package manager](https://docs.astral.sh/uv/) — install via
+`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+</Note>
+
+## As a Python library
+
+```bash
+pip install robokassa-mcp
+# or
+uv add robokassa-mcp
+```
+
+```python
+from robokassa import RobokassaClient
+
+async with RobokassaClient("my-shop", password2="...", password3="...") as client:
+    state = await client.check_payment(inv_id=12345)
+    if state.is_paid and state.info.op_key:
+        refund = await client.refund_create(state.info.op_key)
+```
+
+## HTTP transport (advanced)
+
+By default the server runs as stdio — what every MCP client expects. For
+remote setups or the MCP Inspector:
+
+```bash
+uvx robokassa-mcp --transport http --port 8000
+```
+
+Flags: `--transport {stdio,http,streamable-http,sse}`, `--host`, `--port`.
+
+## Credentials
+
+| Variable | Required for |
+|---|---|
+| `ROBOKASSA_LOGIN` | All tools |
+| `ROBOKASSA_PASSWORD1` | Checkout, SuccessURL verification, CalcOutSumm, fiscal, SMS |
+| `ROBOKASSA_PASSWORD2` | `check_payment` (OpStateExt), ResultURL verification |
+| `ROBOKASSA_PASSWORD3` | `refund_create` (requires API Refund access in cabinet) |
+
+See [Environment](/reference/environment) for per-tool breakdown.
+
+Next: [Quickstart →](/quickstart)
