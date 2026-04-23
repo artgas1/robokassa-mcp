@@ -1,11 +1,27 @@
-# robokassa-mcp
-
 <!-- mcp-name: io.github.artgas1/robokassa-mcp -->
 
-[![CI](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)
-[![Python](https://img.shields.io/pypi/pyversions/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)
-[![License](https://img.shields.io/pypi/l/robokassa-mcp.svg)](./LICENSE)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/artgas1/robokassa-mcp/main/.github/hero.svg" alt="robokassa-mcp — Robokassa payment gateway exposed to AI agents through MCP" width="820"/>
+</p>
+
+<h1 align="center">robokassa-mcp</h1>
+
+<p align="center">
+  <a href="https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml"><img src="https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+  <a href="https://pypi.org/project/robokassa-mcp/"><img src="https://img.shields.io/pypi/v/robokassa-mcp.svg" alt="PyPI"/></a>
+  <a href="https://pypi.org/project/robokassa-mcp/"><img src="https://img.shields.io/pypi/pyversions/robokassa-mcp.svg" alt="Python"/></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/pypi/l/robokassa-mcp.svg" alt="License"/></a>
+  <a href="https://ag-ae4b3bf7.mintlify.app"><img src="https://img.shields.io/badge/docs-mintlify-0068FF.svg" alt="Docs"/></a>
+</p>
+
+<p align="center">
+  <b>📚 <a href="https://ag-ae4b3bf7.mintlify.app">Documentation</a></b> &nbsp;·&nbsp;
+  <a href="https://pypi.org/project/robokassa-mcp/">PyPI</a> &nbsp;·&nbsp;
+  <a href="https://github.com/artgas1/robokassa-mcp/pkgs/container/robokassa-mcp">Docker</a> &nbsp;·&nbsp;
+  <a href="https://registry.modelcontextprotocol.io/v0/servers?search=robokassa">MCP Registry</a>
+</p>
+
+---
 
 Comprehensive Python client and [Model Context Protocol](https://modelcontextprotocol.io) server for [Robokassa](https://robokassa.com) — the Russian payment gateway.
 
