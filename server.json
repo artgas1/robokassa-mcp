@@ -1,0 +1,48 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json",
+  "name": "io.github.artgas1/robokassa-mcp",
+  "description": "Comprehensive MCP server for Robokassa payment gateway — checkout, XML status, refunds, holding, recurring, 54-FZ fiscal receipts, partner API, and auxiliary endpoints.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/artgas1/robokassa-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/artgas1/robokassa-mcp",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "robokassa-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "ROBOKASSA_LOGIN",
+          "description": "Merchant login identifier for the Robokassa shop.",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "ROBOKASSA_PASSWORD1",
+          "description": "Shop's Password #1 — used for checkout URL signing, SuccessURL signature verification, CalcOutSumm, fiscal receipts, and SMS.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ROBOKASSA_PASSWORD2",
+          "description": "Shop's Password #2 — used for OpStateExt payment status checks and ResultURL signature verification.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "ROBOKASSA_PASSWORD3",
+          "description": "Shop's Password #3 — used for Refund API (JWT HS256). Refund API access must be enabled in the cabinet.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
