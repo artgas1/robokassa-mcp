@@ -784,8 +784,41 @@ async def partner_refund(
 
 
 def main() -> None:
-    """Entry point for the `robokassa-mcp` console script."""
-    mcp.run()
+    """Entry point for the `robokassa-mcp` console script.
+
+    Defaults to stdio transport (Claude Desktop / Claude Code / Cursor standard).
+    Pass `--transport http` (or `sse`) to run as an HTTP server — useful for
+    remote MCP setups and for `npx @modelcontextprotocol/inspector`.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="robokassa-mcp",
+        description="MCP server for the Robokassa payment gateway.",
+    )
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "http", "streamable-http", "sse"],
+        default="stdio",
+        help="MCP transport to use (default: stdio).",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host to bind when transport is http/sse (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind when transport is http/sse (default: 8000).",
+    )
+    args = parser.parse_args()
+
+    if args.transport == "stdio":
+        mcp.run()
+    else:
+        mcp.run(transport=args.transport, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

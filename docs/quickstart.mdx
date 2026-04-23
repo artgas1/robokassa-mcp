@@ -1,0 +1,66 @@
+---
+title: Quickstart
+description: "Check payment status and run a full refund flow in under 5 minutes"
+---
+
+Prereq: credentials set per [Installation](/installation).
+
+## Check payment status
+
+Ask your MCP-capable agent:
+
+> Is payment #12345 paid?
+
+Under the hood:
+
+```python
+from robokassa import RobokassaClient
+
+async with RobokassaClient("my-shop", password2="...") as client:
+    state = await client.check_payment(inv_id=12345)
+    print(state.is_paid, state.state_code, state.info.op_key)
+```
+
+## Full refund flow
+
+```python
+from robokassa import RobokassaClient
+
+async with RobokassaClient("my-shop", password2="p2", password3="p3") as client:
+    # 1. Read the operation's OpKey.
+    state = await client.check_payment(12345)
+    assert state.info.op_key, "payment not completed yet"
+
+    # 2. Initiate refund.
+    created = await client.refund_create(state.info.op_key)
+    print("refund requestId:", created.request_id)
+
+    # 3. Poll until terminal.
+    import asyncio
+    while True:
+        status = await client.refund_status(created.request_id)
+        if status.is_terminal:
+            print("final state:", status.state)
+            break
+        await asyncio.sleep(10)
+```
+
+## Verify a ResultURL webhook (FastAPI)
+
+```python
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import PlainTextResponse
+from robokassa import verify_result_signature, build_ok_response
+
+app = FastAPI()
+
+@app.post("/robokassa/result")
+async def result_url(req: Request) -> PlainTextResponse:
+    form = dict(await req.form())
+    if not verify_result_signature(form, password2="..."):
+        raise HTTPException(status_code=403, detail="Bad signature")
+    # Persist, mark invoice as paid, etc.
+    return PlainTextResponse(build_ok_response(form["InvId"]))
+```
+
+Next: [MCP Tools →](/tools)

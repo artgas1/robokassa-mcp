@@ -1,0 +1,71 @@
+---
+title: MCP Tools
+description: "All 18 tools exposed to AI agents, grouped by function"
+---
+
+Every tool below is a `@mcp.tool()` — available to Claude Desktop, Claude Code,
+Cursor, VS Code Copilot, Windsurf, and any other MCP-aware client.
+
+## Checkout
+
+| Tool | What it does |
+|---|---|
+| `create_invoice` | Build a signed payment URL (optional 54-ФЗ fiscal receipt). |
+| `build_split_invoice` | Marketplace-style multi-recipient checkout. |
+
+## Payment status
+
+| Tool | What it does |
+|---|---|
+| `check_payment` | Read current state via OpStateExt (state codes 5/10/20/50/60/80/100 + OpKey). |
+| `list_currencies` | List payment methods available to the shop. |
+| `calc_out_sum` | Compute amount credited after commission. |
+
+## Refunds
+
+| Tool | What it does |
+|---|---|
+| `refund_create` | Initiate a refund (JWT HS256 + Password#3). |
+| `refund_status` | Poll progress by requestId (finished / processing / canceled). |
+| `partner_refund` | Alternative refund path for partner integrators. |
+
+## Webhooks
+
+| Tool | What it does |
+|---|---|
+| `verify_result_signature` | Validate a ResultURL server-to-server notification. |
+| `verify_success_signature` | Validate a SuccessURL browser redirect. |
+
+## Holding (pre-auth)
+
+| Tool | What it does |
+|---|---|
+| `hold_init` | Authorize card + reserve funds (StepByStep=true). |
+| `hold_confirm` | Capture previously-reserved funds. |
+| `hold_cancel` | Release the hold without capturing. |
+
+## Recurring
+
+| Tool | What it does |
+|---|---|
+| `init_recurring_parent` | Mark a checkout payment as recurring parent. |
+| `recurring_charge` | Silent follow-up charge (no user interaction). |
+
+## Fiscal 54-ФЗ
+
+| Tool | What it does |
+|---|---|
+| `second_receipt_create` | Emit the final receipt after an advance/prepayment. |
+| `second_receipt_status` | Check fiscal registration status. |
+
+## Auxiliary
+
+| Tool | What it does |
+|---|---|
+| `send_sms` | Send an SMS via Robokassa's paid SMS service. |
+
+<Warning>
+Tools that move money (`create_invoice`, all refunds, `recurring_charge`,
+`hold_*`, `send_sms`) should **always** be gated behind human confirmation
+in LLM-driven flows. See [Security](/security).
+</Warning>

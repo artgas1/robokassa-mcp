@@ -1,6 +1,9 @@
 # robokassa-mcp
 
 [![CI](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)
+[![License](https://img.shields.io/pypi/l/robokassa-mcp.svg)](./LICENSE)
 
 Comprehensive Python client and [Model Context Protocol](https://modelcontextprotocol.io) server for [Robokassa](https://robokassa.com) — the Russian payment gateway.
 
@@ -85,7 +88,9 @@ async def result_url(req: Request) -> PlainTextResponse:
 
 ## Use as an MCP server
 
-Add to your Claude Desktop / Claude Code config:
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -104,7 +109,7 @@ Add to your Claude Desktop / Claude Code config:
 }
 ```
 
-Claude Code one-liner:
+### Claude Code
 
 ```bash
 claude mcp add robokassa \
@@ -114,6 +119,77 @@ claude mcp add robokassa \
   -e ROBOKASSA_PASSWORD3=... \
   -- uvx robokassa-mcp
 ```
+
+### Cursor
+
+Edit `~/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+### VS Code (GitHub Copilot)
+
+In user or workspace `settings.json`:
+
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+### Windsurf
+
+Edit `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "robokassa": {
+      "command": "uvx",
+      "args": ["robokassa-mcp"],
+      "env": {
+        "ROBOKASSA_LOGIN": "your-shop-login",
+        "ROBOKASSA_PASSWORD1": "password1",
+        "ROBOKASSA_PASSWORD2": "password2",
+        "ROBOKASSA_PASSWORD3": "password3"
+      }
+    }
+  }
+}
+```
+
+### HTTP transport (MCP Inspector, remote clients)
+
+```bash
+uvx robokassa-mcp --transport http --port 8000
+```
+
+Flags: `--transport {stdio,http,streamable-http,sse}`, `--host`, `--port`.
 
 ## MCP tools exposed to agents
 

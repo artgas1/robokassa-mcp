@@ -1,0 +1,65 @@
+---
+title: Security
+description: "Threat model, integrator responsibilities, and reporting"
+---
+
+<Note>
+This page mirrors [SECURITY.md](https://github.com/artgas1/robokassa-mcp/blob/main/SECURITY.md)
+in the repo. The GitHub version is the canonical source.
+</Note>
+
+## Threat model
+
+This server exposes tools that **move real money**. Any integrator that
+connects an LLM to this MCP server accepts the risk that a malicious prompt
+(direct or indirect injection) could cause financial loss.
+
+## Integrator responsibilities
+
+### Gate state-changing tools behind human confirmation
+
+Require explicit approval before these execute:
+
+- `create_invoice` / `init_recurring_parent` / `hold_init`
+- `refund_create` / `partner_refund`
+- `recurring_charge` / `hold_confirm` / `hold_cancel`
+- `second_receipt_create` (fiscal documents, auditable)
+- `send_sms` (paid — abuse = financial damage)
+
+Read-only tools can usually run without approval.
+
+### Validate agent inputs against your database
+
+Never trust amounts, emails, or `inv_id` values from LLM output alone.
+Cross-check against your own records before invoking payment-moving tools.
+
+### Use test mode during development
+
+Pass `is_test=True` to `create_invoice`; consider a separate test shop
+for non-production `ROBOKASSA_LOGIN`.
+
+### Rotate on compromise
+
+All three passwords are regeneratable in the Robokassa cabinet. Rotate
+immediately on any suspected leak (including via LLM logs).
+
+### Scope Password#3 carefully
+
+`Password#3` requires explicit Refund API access in the cabinet. Only grant
+it where refunds are actually needed.
+
+## Known limitations
+
+- **No native rate limiting.** Wrap the server in your own middleware.
+- **Partner API auth varies.** `partner_refund` accepts arbitrary
+  `auth_headers` — caller builds them, server doesn't validate.
+- **Webhook signature verification is advisory.** Returns a bool; integrators
+  must act on it.
+
+## Reporting
+
+Please report security issues via
+[GitHub Security Advisories](https://github.com/artgas1/robokassa-mcp/security/advisories/new).
+
+Maintenance posture is drop-and-forget — responses are best-effort. For
+urgent issues, fork and patch is encouraged.
