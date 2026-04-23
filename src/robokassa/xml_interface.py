@@ -10,6 +10,7 @@ which signals whether the request itself was valid — see `OpStateResultCode`.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Final
@@ -17,7 +18,7 @@ from xml.etree import ElementTree as ET
 
 import httpx
 
-from robokassa.signatures import SignatureAlgorithm, op_state_signature
+from robokassa.signatures import SignatureAlgorithm, compute_signature, op_state_signature
 from robokassa.types import (
     OperationInfo,
     OperationState,
@@ -193,3 +194,206 @@ async def check_payment(
     if raise_on_api_error and state.result_code is not OpStateResultCode.SUCCESS:
         raise RobokassaApiError(state.result_code)
     return state
+
+
+# ---------------------------------------------------------------------------
+# GetCurrencies — list payment method groups available to the shop
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class Currency:
+    """One payment method / currency offered by Robokassa.
+
+    `label` is the value to pass as `IncCurrLabel` at checkout.
+    """
+
+    label: str
+    alias: str | None = None
+    name: str | None = None
+    min_value: Decimal | None = None
+    max_value: Decimal | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CurrencyGroup:
+    """A logical grouping of currencies (e.g. `BankCard`, `SBP`, `YandexPay`)."""
+
+    code: str
+    description: str | None = None
+    currencies: list[Currency] = field(default_factory=lambda: [])
+
+
+@dataclass(frozen=True, slots=True)
+class CurrenciesListing:
+    """Result of GetCurrencies."""
+
+    result_code: OpStateResultCode
+    groups: list[CurrencyGroup] = field(default_factory=lambda: [])
+
+
+def _parse_currency(element: ET.Element) -> Currency:
+    return Currency(
+        label=element.attrib.get("Label", ""),
+        alias=element.attrib.get("Alias") or None,
+        name=element.attrib.get("Name") or None,
+        min_value=_parse_optional_decimal(element.attrib.get("MinValue")),
+        max_value=_parse_optional_decimal(element.attrib.get("MaxValue")),
+    )
+
+
+def _iter_children(element: ET.Element | None, tag: str) -> list[ET.Element]:
+    if element is None:
+        return []
+    namespaced = element.findall(f"{{{XML_NAMESPACE}}}{tag}")
+    return namespaced or element.findall(tag)
+
+
+def parse_currencies_response(xml_text: str) -> CurrenciesListing:
+    """Parse the XML returned by GetCurrencies."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        raise RobokassaResponseError(f"Invalid XML: {exc}") from exc
+
+    result_elem = _find_child(root, "Result")
+    code_text = _find_text(result_elem, "Code")
+    if code_text is None:
+        raise RobokassaResponseError("Missing <Result><Code> in GetCurrencies response")
+    try:
+        result_code = OpStateResultCode(int(code_text))
+    except ValueError as exc:
+        raise RobokassaResponseError(f"Unknown Result.Code: {code_text!r}") from exc
+
+    if result_code is not OpStateResultCode.SUCCESS:
+        return CurrenciesListing(result_code=result_code)
+
+    groups: list[CurrencyGroup] = []
+    groups_root = _find_child(root, "Groups")
+    for group_elem in _iter_children(groups_root, "Group"):
+        items_elem = _find_child(group_elem, "Items")
+        currencies = [_parse_currency(c) for c in _iter_children(items_elem, "Currency")]
+        groups.append(
+            CurrencyGroup(
+                code=group_elem.attrib.get("Code", ""),
+                description=group_elem.attrib.get("Description") or None,
+                currencies=currencies,
+            )
+        )
+
+    return CurrenciesListing(result_code=result_code, groups=groups)
+
+
+async def list_currencies(
+    merchant_login: str,
+    *,
+    language: str = "ru",
+    base_url: str = DEFAULT_BASE_URL,
+    http_client: httpx.AsyncClient | None = None,
+    raise_on_api_error: bool = True,
+) -> CurrenciesListing:
+    """Query Robokassa's GetCurrencies endpoint for available payment methods.
+
+    GetCurrencies is a public method — no password / signature required.
+
+    Args:
+        merchant_login: Shop identifier.
+        language: UI language for Name fields (`ru` or `en`).
+        base_url / http_client: Same as `check_payment`.
+        raise_on_api_error: If True, raise on non-zero Result.Code.
+    """
+    url = f"{base_url}/GetCurrencies"
+    params = {"MerchantLogin": merchant_login, "Language": language}
+
+    owns_client = http_client is None
+    client = http_client or httpx.AsyncClient(timeout=30.0)
+    try:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        listing = parse_currencies_response(response.text)
+    finally:
+        if owns_client:
+            await client.aclose()
+
+    if raise_on_api_error and listing.result_code is not OpStateResultCode.SUCCESS:
+        raise RobokassaApiError(listing.result_code)
+    return listing
+
+
+# ---------------------------------------------------------------------------
+# CalcOutSumm — calculate how much the shop receives for a given payment
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class CalcOutSumResult:
+    """Result of CalcOutSumm — the amount credited to the shop."""
+
+    result_code: OpStateResultCode
+    out_sum: Decimal | None = None
+
+
+def parse_calc_out_sum_response(xml_text: str) -> CalcOutSumResult:
+    """Parse the XML returned by CalcOutSumm."""
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as exc:
+        raise RobokassaResponseError(f"Invalid XML: {exc}") from exc
+
+    result_elem = _find_child(root, "Result")
+    code_text = _find_text(result_elem, "Code")
+    if code_text is None:
+        raise RobokassaResponseError("Missing <Result><Code> in CalcOutSumm response")
+    try:
+        result_code = OpStateResultCode(int(code_text))
+    except ValueError as exc:
+        raise RobokassaResponseError(f"Unknown Result.Code: {code_text!r}") from exc
+
+    if result_code is not OpStateResultCode.SUCCESS:
+        return CalcOutSumResult(result_code=result_code)
+
+    out_sum = _parse_optional_decimal(_find_text(root, "OutSum"))
+    return CalcOutSumResult(result_code=result_code, out_sum=out_sum)
+
+
+async def calc_out_sum(
+    merchant_login: str,
+    inc_sum: Decimal | float | int | str,
+    password1: str,
+    *,
+    inc_curr_label: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+    base_url: str = DEFAULT_BASE_URL,
+    http_client: httpx.AsyncClient | None = None,
+    raise_on_api_error: bool = True,
+) -> CalcOutSumResult:
+    """Calculate how much will be credited to the shop for a given IncSum.
+
+    Useful for showing the payment-method fee in the checkout UI.
+
+    Signature: `<algorithm>(MerchantLogin:IncSum:Password#1)`.
+    """
+    inc_sum_str = str(inc_sum)
+    signature = compute_signature(merchant_login, inc_sum_str, password1, algorithm=algorithm)
+    params: dict[str, str | int] = {
+        "MerchantLogin": merchant_login,
+        "IncSum": inc_sum_str,
+        "Signature": signature,
+    }
+    if inc_curr_label is not None:
+        params["IncCurrLabel"] = inc_curr_label
+    url = f"{base_url}/CalcOutSumm"
+
+    owns_client = http_client is None
+    client = http_client or httpx.AsyncClient(timeout=30.0)
+    try:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        result = parse_calc_out_sum_response(response.text)
+    finally:
+        if owns_client:
+            await client.aclose()
+
+    if raise_on_api_error and result.result_code is not OpStateResultCode.SUCCESS:
+        raise RobokassaApiError(result.result_code)
+    return result

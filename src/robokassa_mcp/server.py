@@ -8,8 +8,10 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from robokassa import calc_out_sum as _calc_out_sum
 from robokassa import check_payment as _check_payment
 from robokassa import create_invoice as _create_invoice
+from robokassa import list_currencies as _list_currencies
 from robokassa import refund_create as _refund_create
 from robokassa import refund_status as _refund_status
 from robokassa.checkout import CheckoutReceipt, CheckoutReceiptItem
@@ -357,6 +359,90 @@ def verify_success_signature(
     pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
     valid = _verify_success_signature(params, pw1, algorithm=algorithm)
     return {"valid": valid}
+
+
+@mcp.tool()
+async def list_currencies(
+    merchant_login: str | None = None,
+    language: str = "ru",
+) -> dict[str, Any]:
+    """List payment methods / currencies available to a Robokassa shop.
+
+    Returns the full catalogue grouped by payment family (BankCard, SBP,
+    SberPay, YandexPay, etc.) with per-method Label, Alias, Name, and
+    min/max transaction bounds where applicable.
+
+    The Label values are what you pass as `IncCurrLabel` when calling
+    `create_invoice` to restrict the user to a specific payment method.
+
+    No password / signature required — GetCurrencies is a public endpoint.
+
+    Args:
+        merchant_login: Shop identifier. Falls back to ROBOKASSA_LOGIN env var.
+        language: UI language for Name fields (`ru` / `en`).
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    listing = await _list_currencies(login, language=language)
+    return {
+        "result_code": int(listing.result_code),
+        "groups": [
+            {
+                "code": g.code,
+                "description": g.description,
+                "currencies": [
+                    {
+                        "label": c.label,
+                        "alias": c.alias,
+                        "name": c.name,
+                        "min_value": str(c.min_value) if c.min_value is not None else None,
+                        "max_value": str(c.max_value) if c.max_value is not None else None,
+                    }
+                    for c in g.currencies
+                ],
+            }
+            for g in listing.groups
+        ],
+    }
+
+
+@mcp.tool()
+async def calc_out_sum(
+    inc_sum: float,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    inc_curr_label: str | None = None,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Calculate the amount credited to the shop for a given customer payment.
+
+    Useful for showing the commission / final sum in checkout UI.
+
+    Signature: `<algorithm>(MerchantLogin:IncSum:Password#1)`.
+
+    Args:
+        inc_sum: Amount the customer pays.
+        merchant_login: Falls back to ROBOKASSA_LOGIN.
+        password1: Falls back to ROBOKASSA_PASSWORD1.
+        inc_curr_label: Specific payment method label from `list_currencies`.
+            If omitted, Robokassa calculates for the default method.
+        algorithm: Signature algorithm configured in the cabinet.
+
+    Returns:
+        `{out_sum: str | None, result_code: int}`.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    result = await _calc_out_sum(
+        login,
+        Decimal(str(inc_sum)),
+        pw1,
+        inc_curr_label=inc_curr_label,
+        algorithm=algorithm,
+    )
+    return {
+        "result_code": int(result.result_code),
+        "out_sum": str(result.out_sum) if result.out_sum is not None else None,
+    }
 
 
 def main() -> None:
