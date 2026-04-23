@@ -41,6 +41,7 @@ from robokassa.refund import (
     refund_status,
 )
 from robokassa.signatures import SignatureAlgorithm, compute_signature, op_state_signature
+from robokassa.sms import SMS_URL, SmsResult, build_sms_signature, send_sms
 from robokassa.split import (
     DEFAULT_SPLIT_URL,
     SplitInvoice,
@@ -85,6 +86,7 @@ __all__ = [
     "HOLD_CANCEL_URL",
     "HOLD_CONFIRM_URL",
     "RECURRING_URL",
+    "SMS_URL",
     "CalcOutSumResult",
     "CheckoutInvoice",
     "CheckoutReceipt",
@@ -111,6 +113,7 @@ __all__ = [
     "RobokassaError",
     "RobokassaResponseError",
     "SignatureAlgorithm",
+    "SmsResult",
     "SplitInvoice",
     "SplitRecipient",
     "TaxType",
@@ -118,6 +121,7 @@ __all__ = [
     "build_checkout_signature",
     "build_ok_response",
     "build_refund_jwt",
+    "build_sms_signature",
     "build_split_invoice",
     "calc_out_sum",
     "check_payment",
@@ -139,6 +143,7 @@ __all__ = [
     "recurring_charge",
     "refund_create",
     "refund_status",
+    "send_sms",
     "verify_result_signature",
     "verify_success_signature",
 ]
