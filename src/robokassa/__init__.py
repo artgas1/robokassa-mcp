@@ -9,6 +9,14 @@ from robokassa.checkout import (
     create_invoice,
 )
 from robokassa.client import RobokassaClient
+from robokassa.fiscal import (
+    FISCAL_BASE_URL,
+    FiscalAttachResult,
+    FiscalStatusResult,
+    encode_fiscal_body,
+    second_receipt_create,
+    second_receipt_status,
+)
 from robokassa.holding import (
     HOLD_CANCEL_URL,
     HOLD_CONFIRM_URL,
@@ -89,6 +97,7 @@ __all__ = [
     "DEFAULT_CHECKOUT_URL",
     "DEFAULT_REFUND_BASE_URL",
     "DEFAULT_SPLIT_URL",
+    "FISCAL_BASE_URL",
     "HOLD_CANCEL_URL",
     "HOLD_CONFIRM_URL",
     "PARTNER_API_BASE_URL",
@@ -101,6 +110,8 @@ __all__ = [
     "CurrenciesListing",
     "Currency",
     "CurrencyGroup",
+    "FiscalAttachResult",
+    "FiscalStatusResult",
     "HoldingActionResult",
     "JwtAlgorithm",
     "OpStateResultCode",
@@ -137,6 +148,7 @@ __all__ = [
     "compute_signature",
     "compute_success_signature",
     "create_invoice",
+    "encode_fiscal_body",
     "hold_cancel",
     "hold_confirm",
     "hold_init",
@@ -153,6 +165,8 @@ __all__ = [
     "recurring_charge",
     "refund_create",
     "refund_status",
+    "second_receipt_create",
+    "second_receipt_status",
     "send_sms",
     "verify_result_signature",
     "verify_success_signature",
