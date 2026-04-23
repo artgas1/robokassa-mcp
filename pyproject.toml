@@ -66,6 +66,12 @@ select = [
     "SIM", # flake8-simplify
     "RUF", # ruff-specific
 ]
+ignore = [
+    # Cyrillic docstrings are intentional — Robokassa documentation is in Russian.
+    "RUF001", # ambiguous characters in strings
+    "RUF002", # ambiguous characters in docstrings
+    "RUF003", # ambiguous characters in comments
+]
 
 [tool.pyright]
 pythonVersion = "3.11"
