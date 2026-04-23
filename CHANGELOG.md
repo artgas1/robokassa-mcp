@@ -2,7 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.1.1] - 2026-04-24
+
+### Fixed
+
+- `server.json` description trimmed to fit MCP Registry's 100-char limit.
+  v0.1.0 was published to PyPI successfully, but registry rejected the
+  initial manifest (422 Unprocessable Entity, length 170). v0.1.1 is the
+  same library with the corrected manifest.
+
+## [0.1.0] - 2026-04-24
 
 ### Added
 
@@ -18,6 +27,5 @@ All notable changes to this project will be documented in this file.
 - SMS sending via Robokassa's SMS service
 - XML Interfaces: GetCurrencies, CalcOutSumm
 - `RobokassaClient` convenience wrapper with async context manager
-- FastMCP server exposing 8 tools to AI agents
-
-Not yet released — first release will be `0.1.0`.
+- FastMCP server exposing 18 tools to AI agents
+- Multi-arch Docker image at `ghcr.io/artgas1/robokassa-mcp`
