@@ -17,7 +17,9 @@ from robokassa.refund import (
     JwtAlgorithm,
     RefundCreateResult,
     RefundInvoiceItem,
+    RefundStatusResult,
     refund_create,
+    refund_status,
 )
 from robokassa.signatures import SignatureAlgorithm
 from robokassa.types import OperationState
@@ -110,4 +112,15 @@ class RobokassaClient:
             base_url=self.refund_base_url,
             http_client=self._http_client,
             raise_on_api_error=raise_on_api_error,
+        )
+
+    async def refund_status(self, request_id: str) -> RefundStatusResult:
+        """Fetch the current state of a refund request via Refund/GetState.
+
+        No passwords required — the `request_id` is the sole credential.
+        """
+        return await refund_status(
+            request_id,
+            base_url=self.refund_base_url,
+            http_client=self._http_client,
         )

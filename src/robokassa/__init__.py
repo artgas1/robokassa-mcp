@@ -8,11 +8,15 @@ from robokassa.refund import (
     PaymentObject,
     RefundCreateResult,
     RefundInvoiceItem,
+    RefundNotFoundError,
     RefundState,
+    RefundStatusResult,
     TaxType,
     build_refund_jwt,
     parse_refund_create_response,
+    parse_refund_status_response,
     refund_create,
+    refund_status,
 )
 from robokassa.signatures import SignatureAlgorithm, compute_signature, op_state_signature
 from robokassa.types import (
@@ -39,7 +43,9 @@ __all__ = [
     "PaymentObject",
     "RefundCreateResult",
     "RefundInvoiceItem",
+    "RefundNotFoundError",
     "RefundState",
+    "RefundStatusResult",
     "RobokassaApiError",
     "RobokassaClient",
     "RobokassaError",
@@ -53,5 +59,7 @@ __all__ = [
     "op_state_signature",
     "parse_op_state_response",
     "parse_refund_create_response",
+    "parse_refund_status_response",
     "refund_create",
+    "refund_status",
 ]

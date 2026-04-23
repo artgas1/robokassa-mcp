@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 
 from robokassa import check_payment as _check_payment
 from robokassa import refund_create as _refund_create
+from robokassa import refund_status as _refund_status
 from robokassa.refund import JwtAlgorithm, RefundInvoiceItem
 from robokassa.signatures import SignatureAlgorithm
 
@@ -163,6 +164,34 @@ async def refund_create(
         "success": result.success,
         "request_id": result.request_id,
         "message": result.message,
+    }
+
+
+@mcp.tool()
+async def refund_status(request_id: str) -> dict[str, Any]:
+    """Check the current state of a previously-created refund request.
+
+    Args:
+        request_id: GUID returned by `refund_create()`.
+
+    Returns:
+        `{request_id, amount, state, is_finished, is_terminal}` where
+        `state` ∈ `finished` / `processing` / `canceled`:
+            - `finished` — возврат завершён (полный или частичный)
+            - `processing` — возврат в процессе выполнения
+            - `canceled` — возврат отменён через личный кабинет
+
+    This endpoint requires no authentication beyond the request_id itself.
+    If the request_id is invalid or not found, the call raises
+    `RefundNotFoundError`.
+    """
+    result = await _refund_status(request_id)
+    return {
+        "request_id": result.request_id,
+        "amount": str(result.amount),
+        "state": result.state.value,
+        "is_finished": result.is_finished,
+        "is_terminal": result.is_terminal,
     }
 
 
