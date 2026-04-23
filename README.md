@@ -1,5 +1,7 @@
 # robokassa-mcp
 
+<!-- mcp-name: io.github.artgas1/robokassa-mcp -->
+
 [![CI](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/artgas1/robokassa-mcp/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/robokassa-mcp.svg)](https://pypi.org/project/robokassa-mcp/)

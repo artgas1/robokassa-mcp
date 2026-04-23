@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" fill="none" role="img" aria-label="robokassa-mcp">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0068FF"/>
+      <stop offset="1" stop-color="#00C2FF"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#7C4DFF"/>
+      <stop offset="1" stop-color="#0068FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- card (left): Robokassa payment -->
+  <g transform="translate(28,40)">
+    <rect x="0" y="0" width="96" height="64" rx="12" fill="url(#g1)"/>
+    <rect x="10" y="18" width="40" height="6" rx="3" fill="#fff" opacity="0.9"/>
+    <rect x="10" y="30" width="26" height="4" rx="2" fill="#fff" opacity="0.55"/>
+    <circle cx="74" cy="44" r="9" fill="#fff" opacity="0.85"/>
+    <circle cx="82" cy="44" r="9" fill="#fff" opacity="0.55"/>
+  </g>
+
+  <!-- MCP protocol chain (middle) -->
+  <g transform="translate(144,72)" stroke="url(#g2)" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M0 8 L20 8"/>
+    <circle cx="30" cy="8" r="7" fill="#fff" stroke="#7C4DFF"/>
+    <path d="M40 8 L60 8"/>
+    <circle cx="70" cy="8" r="7" fill="#fff" stroke="#7C4DFF"/>
+    <path d="M80 8 L100 8"/>
+  </g>
+
+  <!-- AI agent (right): hexagon with "AI" -->
+  <g transform="translate(264,36)">
+    <polygon points="40,0 76,22 76,64 40,86 4,64 4,22" fill="#111827"/>
+    <polygon points="40,0 76,22 76,64 40,86 4,64 4,22" fill="url(#g2)" opacity="0.25"/>
+    <text x="40" y="51" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-weight="800" font-size="22" fill="#fff">AI</text>
+  </g>
+
+  <!-- label -->
+  <g transform="translate(0,140)" font-family="ui-sans-serif, system-ui" text-anchor="middle">
+    <text x="200" y="12" font-size="13" font-weight="700" fill="#111827">robokassa → MCP → agent</text>
+  </g>
+</svg>
