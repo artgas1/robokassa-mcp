@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import os
+from decimal import Decimal
 from typing import Any
 
 from fastmcp import FastMCP
 
 from robokassa import check_payment as _check_payment
+from robokassa import refund_create as _refund_create
+from robokassa.refund import JwtAlgorithm, RefundInvoiceItem
 from robokassa.signatures import SignatureAlgorithm
 
 mcp: FastMCP = FastMCP("robokassa")
@@ -75,6 +78,91 @@ async def check_payment(
             "bank_card_rrn": state.info.bank_card_rrn,
         },
         "user_fields": state.user_fields,
+    }
+
+
+def _parse_refund_items(items: list[dict[str, Any]] | None) -> list[RefundInvoiceItem] | None:
+    """Convert MCP-friendly dicts into `RefundInvoiceItem`s.
+
+    Accepted keys per item: name, quantity, cost, tax, payment_method, payment_object.
+    Enum fields accept their string values (e.g. `tax="vat20"`, `payment_object="service"`).
+    """
+    if items is None:
+        return None
+    if not items:
+        return []
+    from robokassa.refund import PaymentMethod, PaymentObject, TaxType
+
+    parsed: list[RefundInvoiceItem] = []
+    for raw in items:
+        parsed.append(
+            RefundInvoiceItem(
+                name=str(raw["name"]),
+                quantity=raw["quantity"] if isinstance(raw["quantity"], int) else Decimal(str(raw["quantity"])),
+                cost=Decimal(str(raw["cost"])),
+                tax=TaxType(raw.get("tax", TaxType.NONE.value)),
+                payment_method=PaymentMethod(raw.get("payment_method", PaymentMethod.FULL_PAYMENT.value)),
+                payment_object=PaymentObject(raw.get("payment_object", PaymentObject.COMMODITY.value)),
+            )
+        )
+    return parsed
+
+
+@mcp.tool()
+async def refund_create(
+    op_key: str,
+    password3: str | None = None,
+    refund_sum: float | None = None,
+    items: list[dict[str, Any]] | None = None,
+    algorithm: JwtAlgorithm = "HS256",
+) -> dict[str, Any]:
+    """Initiate a refund for a successful Robokassa payment.
+
+    Requires `op_key` — obtained from `check_payment` (OpStateExt) or the
+    `Result2` webhook payload for the original operation.
+
+    Refund amount:
+        - Omit `refund_sum` for a FULL refund of the original operation.
+        - Pass a numeric amount for a partial refund.
+
+    Fiscal receipt:
+        - Omit `items` to refund without emitting a fiscal receipt (appropriate
+          when the original sale was not fiscalized through Robokassa).
+        - Pass a list of items to emit a receipt for the refund. Each item:
+          `{name, quantity, cost, tax, payment_method, payment_object}` where
+          tax ∈ none/vat0/vat5/vat7/vat10/vat20/vat105/vat107/vat110/vat120,
+          payment_method ∈ full_payment/advance/..., payment_object ∈
+          commodity/service/payment/...
+
+    Authentication:
+        Uses JWT signed with `Password#3`. This is distinct from Password#1
+        (checkout) and Password#2 (XML status). Access to the Refund API must
+        be enabled in the Robokassa cabinet separately.
+
+    Returns:
+        `{success: bool, request_id: str | None, message: str | None}`.
+        Store `request_id` to poll refund status via `refund_status`.
+        Common failure messages: NotEnoughOperationFunds, OperationNotFound,
+        AlreadyRefunded.
+
+    Credentials may be passed explicitly or via the ROBOKASSA_PASSWORD3 env var.
+    """
+    pw3 = _resolve_credential(password3, "ROBOKASSA_PASSWORD3")
+    parsed_items = _parse_refund_items(items)
+    amount = Decimal(str(refund_sum)) if refund_sum is not None else None
+
+    result = await _refund_create(
+        op_key,
+        pw3,
+        refund_sum=amount,
+        items=parsed_items,
+        algorithm=algorithm,
+        raise_on_api_error=False,
+    )
+    return {
+        "success": result.success,
+        "request_id": result.request_id,
+        "message": result.message,
     }
 
 

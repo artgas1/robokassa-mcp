@@ -7,10 +7,18 @@ instance methods.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Self
 
 import httpx
 
+from robokassa.refund import (
+    DEFAULT_REFUND_BASE_URL,
+    JwtAlgorithm,
+    RefundCreateResult,
+    RefundInvoiceItem,
+    refund_create,
+)
 from robokassa.signatures import SignatureAlgorithm
 from robokassa.types import OperationState
 from robokassa.xml_interface import DEFAULT_BASE_URL, check_payment
@@ -20,8 +28,9 @@ class RobokassaClient:
     """Convenience wrapper holding credentials + HTTP client for Robokassa API calls.
 
     Passwords are optional — only those needed for the specific methods you
-    call must be provided. For `check_payment` you need at least
-    `merchant_login` and `password2`.
+    call must be provided. Examples:
+        - `check_payment` — `merchant_login` + `password2`
+        - `refund_create` — `password3`
     """
 
     def __init__(
@@ -32,7 +41,9 @@ class RobokassaClient:
         password2: str | None = None,
         password3: str | None = None,
         algorithm: SignatureAlgorithm = "md5",
+        jwt_algorithm: JwtAlgorithm = "HS256",
         xml_base_url: str = DEFAULT_BASE_URL,
+        refund_base_url: str = DEFAULT_REFUND_BASE_URL,
         http_client: httpx.AsyncClient | None = None,
     ) -> None:
         self.merchant_login = merchant_login
@@ -40,7 +51,9 @@ class RobokassaClient:
         self.password2 = password2
         self.password3 = password3
         self.algorithm: SignatureAlgorithm = algorithm
+        self.jwt_algorithm: JwtAlgorithm = jwt_algorithm
         self.xml_base_url = xml_base_url
+        self.refund_base_url = refund_base_url
         self._http_client = http_client
         self._owns_http_client = http_client is None
 
@@ -71,6 +84,30 @@ class RobokassaClient:
             self._require(self.password2, "password2"),
             algorithm=self.algorithm,
             base_url=self.xml_base_url,
+            http_client=self._http_client,
+            raise_on_api_error=raise_on_api_error,
+        )
+
+    async def refund_create(
+        self,
+        op_key: str,
+        *,
+        refund_sum: Decimal | float | None = None,
+        items: list[RefundInvoiceItem] | None = None,
+        raise_on_api_error: bool = True,
+    ) -> RefundCreateResult:
+        """Initiate a refund via Refund/Create.
+
+        Requires `password3` on the client (distinct from P1/P2). Access to the
+        Refund API must also be enabled in the Robokassa cabinet.
+        """
+        return await refund_create(
+            op_key,
+            self._require(self.password3, "password3"),
+            refund_sum=refund_sum,
+            items=items,
+            algorithm=self.jwt_algorithm,
+            base_url=self.refund_base_url,
             http_client=self._http_client,
             raise_on_api_error=raise_on_api_error,
         )
