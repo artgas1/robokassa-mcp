@@ -9,9 +9,11 @@ from typing import Any
 from fastmcp import FastMCP
 
 from robokassa import check_payment as _check_payment
+from robokassa import create_invoice as _create_invoice
 from robokassa import refund_create as _refund_create
 from robokassa import refund_status as _refund_status
-from robokassa.refund import JwtAlgorithm, RefundInvoiceItem
+from robokassa.checkout import CheckoutReceipt, CheckoutReceiptItem
+from robokassa.refund import JwtAlgorithm, PaymentMethod, PaymentObject, RefundInvoiceItem, TaxType
 from robokassa.signatures import SignatureAlgorithm
 from robokassa.webhooks import (
     build_ok_response as _build_ok_response,
@@ -201,6 +203,100 @@ async def refund_status(request_id: str) -> dict[str, Any]:
         "state": result.state.value,
         "is_finished": result.is_finished,
         "is_terminal": result.is_terminal,
+    }
+
+
+def _build_checkout_receipt(
+    items: list[dict[str, Any]] | None,
+    sno: str | None,
+) -> CheckoutReceipt | None:
+    if items is None:
+        return None
+    parsed: list[CheckoutReceiptItem] = []
+    for raw in items:
+        parsed.append(
+            CheckoutReceiptItem(
+                name=str(raw["name"]),
+                quantity=raw["quantity"] if isinstance(raw["quantity"], int) else Decimal(str(raw["quantity"])),
+                sum=Decimal(str(raw["sum"])),
+                tax=TaxType(raw.get("tax", TaxType.NONE.value)),
+                payment_method=PaymentMethod(raw.get("payment_method", PaymentMethod.FULL_PAYMENT.value)),
+                payment_object=PaymentObject(raw.get("payment_object", PaymentObject.COMMODITY.value)),
+                nomenclature_code=raw.get("nomenclature_code"),
+            )
+        )
+    return CheckoutReceipt(items=parsed, sno=sno)
+
+
+@mcp.tool()
+def create_invoice(
+    out_sum: float,
+    inv_id: int,
+    description: str | None = None,
+    merchant_login: str | None = None,
+    password1: str | None = None,
+    receipt_items: list[dict[str, Any]] | None = None,
+    receipt_sno: str | None = None,
+    shp_params: dict[str, Any] | None = None,
+    email: str | None = None,
+    culture: str = "ru",
+    currency: str | None = None,
+    is_test: bool = False,
+    algorithm: SignatureAlgorithm = "md5",
+) -> dict[str, Any]:
+    """Build a signed Robokassa checkout URL + form fields for a new payment.
+
+    Does NOT make an HTTP request — produces the URL to redirect the user to.
+
+    Args:
+        out_sum: Amount to charge (any numeric type; normalized to 2 decimals).
+        inv_id: Unique invoice number. Pass 0 to let Robokassa assign one.
+        description: Human-readable order description.
+        merchant_login: Shop ID. Falls back to ROBOKASSA_LOGIN env var.
+        password1: Password#1. Falls back to ROBOKASSA_PASSWORD1 env var.
+        receipt_items: Optional 54-ФЗ fiscal receipt items. Each item:
+            `{name, quantity, sum, tax, payment_method, payment_object,
+              nomenclature_code}`.
+            Tax ∈ none / vat0 / vat5 / vat7 / vat10 / vat20 / vat105 / vat107 /
+            vat110 / vat120.
+        receipt_sno: Taxation scheme (`osn` / `usn_income` / etc.).
+        shp_params: Extra `Shp_*` params echoed back in ResultURL. Keys may be
+            passed without the `Shp_` prefix.
+        email: Pre-fill customer email on the payment page.
+        culture: UI locale (`ru` / `en` / `kk`).
+        currency: Restrict to specific payment method (`IncCurrLabel`).
+        is_test: Use sandbox checkout instead of production.
+        algorithm: Signature hash algorithm.
+
+    Returns:
+        `{url, form_action, form_fields, signature, receipt_json}` —
+        use `url` for a browser redirect, or `form_action` + `form_fields`
+        for an HTML form post.
+    """
+    login = _resolve_credential(merchant_login, "ROBOKASSA_LOGIN")
+    pw1 = _resolve_credential(password1, "ROBOKASSA_PASSWORD1")
+    receipt = _build_checkout_receipt(receipt_items, receipt_sno)
+
+    invoice = _create_invoice(
+        merchant_login=login,
+        out_sum=Decimal(str(out_sum)),
+        inv_id=inv_id,
+        password1=pw1,
+        description=description,
+        receipt=receipt,
+        shp_params=shp_params,
+        email=email,
+        culture=culture,
+        currency=currency,
+        is_test=is_test,
+        algorithm=algorithm,
+    )
+    return {
+        "url": invoice.url,
+        "form_action": invoice.form_action,
+        "form_fields": invoice.form_fields,
+        "signature": invoice.signature,
+        "receipt_json": invoice.receipt_json,
     }
 
 
