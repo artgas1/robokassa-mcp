@@ -14,7 +14,7 @@ JSON object (no extra whitespace). PyJWT encodes with
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Any, Final, Literal
 
@@ -234,6 +234,98 @@ async def refund_create(
     return result
 
 
+@dataclass(frozen=True, slots=True)
+class RefundStatusResult:
+    """Response from Refund/GetState."""
+
+    request_id: str
+    amount: Decimal
+    state: RefundState
+
+    @property
+    def is_finished(self) -> bool:
+        return self.state is RefundState.FINISHED
+
+    @property
+    def is_terminal(self) -> bool:
+        return self.state in {RefundState.FINISHED, RefundState.CANCELED}
+
+
+class RefundNotFoundError(RobokassaApiError):
+    """Robokassa rejected the requestId as invalid or non-existent."""
+
+    def __init__(self, request_id: str, message: str) -> None:
+        self.request_id = request_id
+        # code=0 is a sentinel — Refund/GetState errors carry a message, not a code.
+        super().__init__(0, f"request_id={request_id!r}: {message}")
+
+
+def parse_refund_status_response(data: dict[str, Any], request_id: str) -> RefundStatusResult:
+    """Parse the JSON body returned by Refund/GetState."""
+    if "requestId" not in data or "amount" not in data or "label" not in data:
+        # Failure shape: {"message": "Id is invalid or ..."}.
+        message = data.get("message")
+        if message:
+            raise RefundNotFoundError(request_id, str(message))
+        raise RobokassaResponseError(f"Unexpected refund status shape: {data!r}")
+
+    try:
+        state = RefundState(str(data["label"]))
+    except ValueError as exc:
+        raise RobokassaResponseError(f"Unknown refund state: {data['label']!r}") from exc
+
+    try:
+        amount = Decimal(str(data["amount"]))
+    except (TypeError, ValueError, InvalidOperation) as exc:
+        raise RobokassaResponseError(f"Unparseable refund amount: {data['amount']!r}") from exc
+
+    return RefundStatusResult(
+        request_id=str(data["requestId"]),
+        amount=amount,
+        state=state,
+    )
+
+
+async def refund_status(
+    request_id: str,
+    *,
+    base_url: str = DEFAULT_REFUND_BASE_URL,
+    http_client: httpx.AsyncClient | None = None,
+) -> RefundStatusResult:
+    """Fetch the current state of a refund request via Refund/GetState.
+
+    Args:
+        request_id: GUID returned by `refund_create()`.
+        base_url: Override for the RefundService root.
+        http_client: Optional pre-configured `httpx.AsyncClient` to reuse.
+
+    Returns:
+        `RefundStatusResult` with `state` enum (finished / processing / canceled)
+        and `amount`.
+
+    Raises:
+        RefundNotFoundError: If Robokassa reports the requestId is invalid.
+        RobokassaResponseError: On malformed response body.
+        httpx.HTTPError: On network / HTTP-level failures.
+    """
+    url = f"{base_url}/Refund/GetState"
+
+    owns_client = http_client is None
+    client = http_client or httpx.AsyncClient(timeout=30.0)
+    try:
+        response = await client.get(url, params={"id": request_id})
+        response.raise_for_status()
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise RobokassaResponseError(f"Non-JSON refund status response: {response.text!r}") from exc
+    finally:
+        if owns_client:
+            await client.aclose()
+
+    return parse_refund_status_response(body, request_id)
+
+
 __all__ = [
     "DEFAULT_REFUND_BASE_URL",
     "JwtAlgorithm",
@@ -241,9 +333,13 @@ __all__ = [
     "PaymentObject",
     "RefundCreateResult",
     "RefundInvoiceItem",
+    "RefundNotFoundError",
     "RefundState",
+    "RefundStatusResult",
     "TaxType",
     "build_refund_jwt",
     "parse_refund_create_response",
+    "parse_refund_status_response",
     "refund_create",
+    "refund_status",
 ]
