@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" fill="none" role="img" aria-label="robokassa-mcp hero">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#EEF4FF"/>
+      <stop offset="1" stop-color="#F5F1FF"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0068FF"/>
+      <stop offset="1" stop-color="#00C2FF"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C4DFF"/>
+      <stop offset="1" stop-color="#C26BFF"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect x="0" y="0" width="800" height="360" fill="url(#bg)"/>
+
+  <!-- decorative orbits -->
+  <g stroke="#C7D8FF" stroke-width="1.5" fill="none" opacity="0.7">
+    <ellipse cx="400" cy="180" rx="300" ry="90"/>
+    <ellipse cx="400" cy="180" rx="220" ry="60"/>
+    <ellipse cx="400" cy="180" rx="140" ry="35"/>
+  </g>
+
+  <!-- soft blobs -->
+  <g filter="url(#soft)" opacity="0.55">
+    <circle cx="120" cy="80" r="60" fill="#B9D1FF"/>
+    <circle cx="700" cy="280" r="80" fill="#DCC6FF"/>
+  </g>
+
+  <!-- Robokassa payment card (left) -->
+  <g transform="translate(120,130)">
+    <rect x="0" y="0" width="170" height="104" rx="20" fill="url(#blue)"/>
+    <rect x="0" y="0" width="170" height="104" rx="20" fill="#fff" opacity="0.08"/>
+    <rect x="18" y="26" width="70" height="8" rx="4" fill="#fff" opacity="0.9"/>
+    <rect x="18" y="44" width="44" height="6" rx="3" fill="#fff" opacity="0.6"/>
+    <circle cx="126" cy="72" r="14" fill="#fff" opacity="0.85"/>
+    <circle cx="140" cy="72" r="14" fill="#fff" opacity="0.55"/>
+    <text x="18" y="92" font-family="ui-sans-serif, system-ui" font-size="11" font-weight="700" fill="#fff" opacity="0.9">Robokassa</text>
+  </g>
+
+  <!-- MCP bridge (middle) -->
+  <g transform="translate(310,178)" stroke="url(#violet)" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M0 4 L36 4"/>
+    <circle cx="48" cy="4" r="10" fill="#fff" stroke="#7C4DFF" stroke-width="3"/>
+    <path d="M60 4 L96 4"/>
+    <circle cx="108" cy="4" r="10" fill="#fff" stroke="#7C4DFF" stroke-width="3"/>
+    <path d="M120 4 L156 4"/>
+    <circle cx="168" cy="4" r="10" fill="#fff" stroke="#7C4DFF" stroke-width="3"/>
+    <path d="M180 4 L210 4"/>
+  </g>
+  <text x="418" y="155" font-family="ui-sans-serif, system-ui" font-size="13" font-weight="700" fill="#7C4DFF" text-anchor="middle">MCP</text>
+
+  <!-- AI agent card (right) -->
+  <g transform="translate(540,120)">
+    <polygon points="70,0 135,38 135,112 70,150 5,112 5,38" fill="#111827"/>
+    <polygon points="70,0 135,38 135,112 70,150 5,112 5,38" fill="url(#violet)" opacity="0.3"/>
+    <text x="70" y="88" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-weight="800" font-size="36" fill="#fff">AI</text>
+    <text x="70" y="110" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-weight="600" font-size="11" fill="#fff" opacity="0.75">agent</text>
+  </g>
+
+  <!-- caption -->
+  <g font-family="ui-sans-serif, system-ui" text-anchor="middle">
+    <text x="400" y="300" font-size="22" font-weight="700" fill="#111827">robokassa-mcp</text>
+    <text x="400" y="322" font-size="13" font-weight="500" fill="#475569">payment gateway → MCP → any AI agent</text>
+  </g>
+</svg>
